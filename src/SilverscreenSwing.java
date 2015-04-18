@@ -4,61 +4,68 @@ import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.event.IIOReadProgressListener;
+import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
  * Created by anton on 15-04-17.
  */
-public class SilverscreenSwing {
+public class SilverscreenSwing extends JPanel {
     private JPanel panel;
-    private JLabel label;
     private JLabel title;
+    private JLabel title1;
+    private JLabel title2;
+    private JLabel title3;
+    private JLabel title4;
+    private JLabel spinner;
 
-    ArrayList<Movie> movies;
 
-    BufferedImage picture;
-    URLConnection connection;
+    private ArrayList<Movie> movies;
+
+    private BufferedImage picture;
+    private URLConnection connection;
 
 
     public static void main(String[] args) {
 
-        int PrevX = 100, PrevY = 100, PrevWidth = 800, PrevHeight = 600;
-        boolean inFullScreenMode = true;
+        final boolean inFullScreenMode = true;
 
         final JFrame frame = new JFrame("SilverscreenSwing");
         frame.setContentPane(new SilverscreenSwing().panel);
-        frame.setPreferredSize(new Dimension(800, 600));
+        frame.setPreferredSize(new Dimension(853, 480));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.pack();
         frame.setVisible(true);
 
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] gd = ge.getScreenDevices();
-        if(inFullScreenMode){
-            frame.dispose();
-            frame.setUndecorated(true);
-            gd[gd.length-1].setFullScreenWindow(frame);
-            frame.setVisible(true);
+//        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+//        GraphicsDevice[] gd = ge.getScreenDevices();
+//        frame.dispose();
+//        frame.setUndecorated(true);
+//        gd[gd.length - 1].setFullScreenWindow(frame);
+//        frame.setVisible(true);
 
-        }
+        System.setProperty("awt.useSystemAAFontSettings","on");
+        System.setProperty("swing.aatext", "true");
 
-        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager(); //Listen to keyboard
+
+        KeyboardFocusManager manager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         manager.addKeyEventDispatcher(new KeyEventDispatcher() {
             @Override
             public boolean dispatchKeyEvent(KeyEvent e) {
-                if (e.getID() == KeyEvent.KEY_TYPED) {
+                if(e.getID() == KeyEvent.KEY_PRESSED) {
+
                     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                     frame.setVisible(false);
                 }
@@ -70,9 +77,18 @@ public class SilverscreenSwing {
 
     private void createUIComponents() throws IOException {
 
-        panel = new JPanel();
-        label = new JLabel();
+        panel = this;
         title = new JLabel();
+        title1 = new JLabel();
+        title2 = new JLabel();
+        title3 = new JLabel();
+        title4 = new JLabel();
+        spinner = new JLabel();
+        spinner.setText("Laddar...");
+
+
+
+
 
         movies = new ArrayList<Movie>();
 
@@ -94,13 +110,9 @@ public class SilverscreenSwing {
 
                 Collections.sort(movies, new MovieVoteSorter());
 
-                title.setText(movies.get(movies.size() - 1).getTitle());
-
-
 
                 try {
                     String getURL = movies.get(movies.size() - 1).getUrl();
-                    System.out.println(getURL);
                     URL url = new URL(getURL);
                     connection = url.openConnection();
                     connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
@@ -112,22 +124,89 @@ public class SilverscreenSwing {
                 }
 
                 try {
-                    picture = ImageIO.read(connection.getInputStream());
-                    label.setIcon(new ImageIcon(picture));
 
+
+                    ImageInputStream imageInputStream = ImageIO.createImageInputStream(connection.getInputStream());
+                    Iterator<ImageReader> imageReaderIterator = ImageIO.getImageReaders(imageInputStream);
+                    if(imageReaderIterator.hasNext()) {
+                        ImageReader reader = imageReaderIterator.next();
+                        reader.addIIOReadProgressListener(new IIOReadProgressListener() {
+                            @Override
+                            public void sequenceStarted(ImageReader source, int minIndex) {
+
+                            }
+
+                            @Override
+                            public void sequenceComplete(ImageReader source) {
+
+                            }
+
+                            @Override
+                            public void imageStarted(ImageReader source, int imageIndex) {
+
+                            }
+
+                            @Override
+                            public void imageProgress(ImageReader source, float percentageDone) {
+                                spinner.setText("Ladddar: " + percentageDone);
+                            }
+
+                            @Override
+                            public void imageComplete(ImageReader source) {
+                                spinner.setText(" ");
+
+                            }
+
+                            @Override
+                            public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
+
+                            }
+
+                            @Override
+                            public void thumbnailProgress(ImageReader source, float percentageDone) {
+
+                            }
+
+                            @Override
+                            public void thumbnailComplete(ImageReader source) {
+
+                            }
+
+                            @Override
+                            public void readAborted(ImageReader source) {
+
+                            }
+                        });
+
+                        reader.setInput(imageInputStream);
+                        picture = reader.read(0);
+                    }
+
+                    panel.revalidate();
+                    panel.repaint();
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
 
-
-
-                for(Movie m : movies) {
-                    System.out.println(m.getSlug() + " " +m.getTitle() + " " + m.getVotes() + " " + m.getUrl());
+                System.out.println(movies.size());
+                title.setText(movies.get(movies.size() - 1).getTitle());
+                if(movies.size() > 1) {
+                    title1.setText(movies.get(movies.size() - 2).getTitle());
                 }
-                panel.revalidate();
-                panel.repaint();
+                if(movies.size() > 2) {
+                    title2.setText(movies.get(movies.size() - 3).getTitle());
+                    System.out.println(movies.get(movies.size() - 3).getTitle());
+                }
+                if(movies.size() > 3) {
+                    title3.setText(movies.get(movies.size() - 4).getTitle());
+                }
+                if(movies.size() > 4) {
+                    title4.setText(movies.get(movies.size() - 5).getTitle());
+                }
+
+
             }
 
             @Override
@@ -146,15 +225,11 @@ public class SilverscreenSwing {
                     }
                 }
 
-                panel.repaint();
-
                 Collections.sort(movies, new MovieVoteSorter());
 
-                BufferedImage picture;
                 URLConnection connection = null;
                 try {
                     String getURL = movies.get(movies.size() - 1).getUrl();
-                    System.out.println(getURL);
                     URL url = new URL(getURL);
                     connection = url.openConnection();
                     connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11");
@@ -166,16 +241,41 @@ public class SilverscreenSwing {
                 }
 
                 try {
+                    spinner.setText("Uppdaterar...");
                     picture = ImageIO.read(connection.getInputStream());
-                    label.setIcon(new ImageIcon(picture));
-                    label.revalidate();
+                    spinner.setText(" ");
+                    panel.revalidate();
+                    panel.repaint();
+
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
+
                 for(Movie m : movies) {
-                    System.out.println(m.getSlug() + " " +m.getTitle() + " " + m.getVotes() + " " + m.getUrl());
+                    System.out.println(m.getTitle() + " " + m.getVotes());
                 }
+
+
+
+                title.setText(movies.get(movies.size() - 1).getTitle());
+                title.setText(movies.get(movies.size() - 1).getTitle());
+                if(movies.size() > 1) {
+                    title1.setText(movies.get(movies.size() - 2).getTitle());
+                }
+                if(movies.size() > 2) {
+                    title2.setText(movies.get(movies.size() - 3).getTitle());
+                    System.out.println(movies.get(movies.size() - 3).getTitle());
+                }
+                if(movies.size() > 3) {
+                    title3.setText(movies.get(movies.size() - 4).getTitle());
+                }
+                if(movies.size() > 4) {
+                    title4.setText(movies.get(movies.size() - 5).getTitle());
+                }
+
+
             }
 
             @Override
@@ -197,6 +297,11 @@ public class SilverscreenSwing {
 
     }
 
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        g.drawImage(picture, 0, 0, panel.getWidth(), panel.getHeight(), null);
+    }
 }
 
 
