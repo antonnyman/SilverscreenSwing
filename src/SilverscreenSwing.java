@@ -2,6 +2,8 @@ import com.firebase.client.ChildEventListener;
 import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
 import com.firebase.client.FirebaseError;
+import me.atrox.haikunator.Haikunator;
+import me.atrox.haikunator.HaikunatorBuilder;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -9,6 +11,9 @@ import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -35,6 +40,7 @@ public class SilverscreenSwing extends JPanel {
     private JLabel votes3;
     private JLabel votes4;
     private JLabel startarLabel;
+    private JProgressBar progressBar;
 
 
     private ArrayList<Movie> movies;
@@ -42,12 +48,12 @@ public class SilverscreenSwing extends JPanel {
     private BufferedImage picture;
     private URLConnection connection;
 
-    private InetAddress inetAdress;
+    public String child;
 
 
     public static void main(String[] args) {
 
-        final boolean inFullScreenMode = true;
+
 
         final JFrame frame = new JFrame("SilverscreenSwing");
         frame.setContentPane(new SilverscreenSwing().panel);
@@ -56,12 +62,7 @@ public class SilverscreenSwing extends JPanel {
         frame.pack();
         frame.setVisible(true);
 
-//        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-//        GraphicsDevice[] gd = ge.getScreenDevices();
-//        frame.dispose();
-//        frame.setUndecorated(true);
-//        gd[gd.length - 1].setFullScreenWindow(frame);
-//        frame.setVisible(true);
+//
 
         System.setProperty("awt.useSystemAAFontSettings","on");
         System.setProperty("swing.aatext", "true");
@@ -71,11 +72,23 @@ public class SilverscreenSwing extends JPanel {
         manager.addKeyEventDispatcher(new KeyEventDispatcher() {
             @Override
             public boolean dispatchKeyEvent(KeyEvent e) {
-                if(e.getID() == KeyEvent.KEY_PRESSED) {
+
+                if(e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == KeyEvent.VK_F) {
+                    GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+                    GraphicsDevice[] gd = ge.getScreenDevices();
+                    frame.dispose();
+                    frame.setUndecorated(true);
+                    gd[gd.length - 1].setFullScreenWindow(frame);
+                    frame.setVisible(true);
+                }
+
+                if(e.getID() == KeyEvent.KEY_PRESSED && e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 
                     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                     frame.setVisible(false);
                 }
+
+
                 return false;
             }
         });
@@ -97,29 +110,59 @@ public class SilverscreenSwing extends JPanel {
         votes4 = new JLabel();
         spinner = new JLabel();
         startarLabel = new JLabel();
-        spinner.setText("Laddar...");
+        progressBar = new JProgressBar();
+
 
 
         movies = new ArrayList<Movie>();
 
+        child = displayDialog();
+
+        startarLabel.setVisible(true);
+        startarLabel.setText("Startar...");
 
 
         Firebase firebase = new Firebase("https://klara.firebaseio.com/");
-        firebase.child("top_movies").addChildEventListener(new ChildEventListener() {
+        System.out.print(child);
+        firebase.child(child).orderByChild("votes").limitToLast(5).addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
+                progressBar.setVisible(false);
                 startarLabel.setVisible(false);
                 Map<String, Object> movie = (Map<String, Object>) dataSnapshot.getValue();
 
-                if(dataSnapshot.hasChildren()) {
-                    Movie m = new Movie(dataSnapshot.getKey(),(String) movie.get("title"), (String) movie.get("fanart"), (String) movie.get("year"), (Long) movie.get("votes"));
-                    if(!movies.contains(m)) {
+                if (dataSnapshot.hasChildren()) {
+                    Movie m = new Movie(dataSnapshot.getKey(), (String) movie.get("title"), (String) movie.get("fanart"), (String) movie.get("year"), (Long) movie.get("votes"));
+                    if (!movies.contains(m)) {
                         movies.add(m);
                     }
                 }
 
-                Collections.sort(movies, new MovieVoteSorter());
+
+                if(movies.size() > 1) {
+                    Collections.sort(movies, new MovieVoteSorter());
+                }
+
+
+                title.setText(" " + movies.get(movies.size() - 1).getTitle() + " ");
+                votes.setText(" " + movies.get(movies.size() - 1).getVotes() + " ");
+                if (movies.size() > 1) {
+                    title1.setText(" " + movies.get(movies.size() - 2).getTitle() + " ");
+                    votes1.setText(" " + movies.get(movies.size() - 2).getVotes() + " ");
+
+                }
+                if (movies.size() > 2) {
+                    title2.setText(" " + movies.get(movies.size() - 3).getTitle() + " ");
+                    votes2.setText(" " + movies.get(movies.size() - 3).getVotes() + " ");
+                }
+                if (movies.size() > 3) {
+                    title3.setText(" " + movies.get(movies.size() - 4).getTitle() + " ");
+                    votes3.setText(" " + movies.get(movies.size() - 4).getVotes() + " ");
+                }
+                if (movies.size() > 4) {
+                    title4.setText(" " + movies.get(movies.size() - 5).getTitle() + " ");
+                    votes4.setText(" " + movies.get(movies.size() - 5).getVotes() + " ");
+                }
 
 
                 try {
@@ -139,17 +182,20 @@ public class SilverscreenSwing extends JPanel {
 
                     ImageInputStream imageInputStream = ImageIO.createImageInputStream(connection.getInputStream());
                     Iterator<ImageReader> imageReaderIterator = ImageIO.getImageReaders(imageInputStream);
-                    if(imageReaderIterator.hasNext()) {
+                    if (imageReaderIterator.hasNext()) {
                         ImageReader reader = imageReaderIterator.next();
                         reader.addIIOReadProgressListener(new IIOReadProgressListener() {
                             @Override
-                            public void sequenceStarted(ImageReader source, int minIndex) { }
+                            public void sequenceStarted(ImageReader source, int minIndex) {
+                            }
 
                             @Override
-                            public void sequenceComplete(ImageReader source) { }
+                            public void sequenceComplete(ImageReader source) {
+                            }
 
                             @Override
-                            public void imageStarted(ImageReader source, int imageIndex) { }
+                            public void imageStarted(ImageReader source, int imageIndex) {
+                            }
 
                             @Override
                             public void imageProgress(ImageReader source, float percentageDone) {
@@ -162,50 +208,33 @@ public class SilverscreenSwing extends JPanel {
                             }
 
                             @Override
-                            public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) { }
+                            public void thumbnailStarted(ImageReader source, int imageIndex, int thumbnailIndex) {
+                            }
 
                             @Override
-                            public void thumbnailProgress(ImageReader source, float percentageDone) { }
+                            public void thumbnailProgress(ImageReader source, float percentageDone) {
+                            }
 
                             @Override
-                            public void thumbnailComplete(ImageReader source) { }
+                            public void thumbnailComplete(ImageReader source) {
+                            }
 
                             @Override
-                            public void readAborted(ImageReader source) { }
+                            public void readAborted(ImageReader source) {
+                            }
                         });
 
                         reader.setInput(imageInputStream);
                         picture = reader.read(0);
                     }
 
-                    spinner.setText(" ");
+                    spinner.setText(child);
                     panel.revalidate();
                     panel.repaint();
 
                 } catch (IOException e) {
 
                     e.printStackTrace();
-                }
-
-
-                title.setText(" " + movies.get( movies.size() - 1).getTitle() + " ");
-                votes.setText(" " +movies.get(movies.size() -1).getVotes() + " ");
-                if(movies.size() > 1) {
-                    title1.setText(" " + movies.get(movies.size() - 2).getTitle() + " " );
-                    votes1.setText(" " +movies.get(movies.size() -2).getVotes() + " ");
-
-                }
-                if(movies.size() > 2) {
-                    title2.setText(" " +movies.get(movies.size() - 3).getTitle() + " ");
-                    votes2.setText(" " + movies.get(movies.size() - 3).getVotes() + " ");
-                }
-                if(movies.size() > 3) {
-                    title3.setText(" " +movies.get(movies.size() - 4).getTitle() + " ");
-                    votes3.setText(" " +movies.get(movies.size() - 4).getVotes() + " ");
-                }
-                if(movies.size() > 4) {
-                    title4.setText(" " +movies.get(movies.size() - 5).getTitle() + " ");
-                    votes4.setText(" " +movies.get(movies.size() -5).getVotes() + " ");
                 }
 
 
@@ -219,13 +248,14 @@ public class SilverscreenSwing extends JPanel {
                 Iterable<DataSnapshot> dataSnapshots = dataSnapshot.getChildren();
                 Collections.sort(movies);
 
-                int place = Collections.binarySearch(movies, new Movie(dataSnapshot.getKey(),(String) movie.get("title"), (String) movie.get("fanart"), (String) movie.get("year"), (Long) movie.get("votes") + 2));
+                int place = Collections.binarySearch(movies, new Movie(dataSnapshot.getKey(), (String) movie.get("title"), (String) movie.get("fanart"), (String) movie.get("year"), (Long) movie.get("votes") + 1));
 
-                for(DataSnapshot ds : dataSnapshots) {
-                    if(ds.getKey().equals("votes")) {
+                for (DataSnapshot ds : dataSnapshots) {
+                    if (ds.getKey().equals("votes")) {
                         movies.get(place).setVotes((Long) ds.getValue());
                     }
                 }
+
 
                 Collections.sort(movies, new MovieVoteSorter());
 
@@ -244,6 +274,8 @@ public class SilverscreenSwing extends JPanel {
 
                 try {
                     spinner.setText("Uppdaterar...");
+
+
                     picture = ImageIO.read(connection.getInputStream());
                     spinner.setText(" ");
                     panel.revalidate();
@@ -255,43 +287,48 @@ public class SilverscreenSwing extends JPanel {
                 }
 
 
-                for(Movie m : movies) {
+                for (Movie m : movies) {
                     System.out.println(m.getTitle() + " " + m.getVotes());
                 }
 
-                title.setText(" " + movies.get( movies.size() - 1).getTitle() + " ");
-                votes.setText(" " +movies.get(movies.size() -1).getVotes() + " ");
-                if(movies.size() > 1) {
-                    title1.setText(movies.get(movies.size() - 2).getTitle());
-                    votes1.setText(" " +movies.get(movies.size() -2).getVotes() + " ");
+                title.setText(" " + movies.get(movies.size() - 1).getTitle() + " ");
+                votes.setText(" " + movies.get(movies.size() - 1).getVotes() + " ");
+                if (movies.size() > 1) {
+                    title1.setText(" " + movies.get(movies.size() - 2).getTitle()+ " ");
+                    votes1.setText(" " + movies.get(movies.size() - 2).getVotes() + " ");
 
                 }
-                if(movies.size() > 2) {
-                    title2.setText(movies.get(movies.size() - 3).getTitle());
+                if (movies.size() > 2) {
+                    title2.setText(" " + movies.get(movies.size() - 3).getTitle()+ " ");
                     votes2.setText(" " + movies.get(movies.size() - 3).getVotes() + " ");
                 }
-                if(movies.size() > 3) {
-                    title3.setText(movies.get(movies.size() - 4).getTitle());
-                    votes3.setText(" " +movies.get(movies.size() - 4).getVotes() + " ");
+                if (movies.size() > 3) {
+                    title3.setText(" " + movies.get(movies.size() - 4).getTitle()+ " ");
+                    votes3.setText(" " + movies.get(movies.size() - 4).getVotes() + " ");
                 }
-                if(movies.size() > 4) {
-                    title4.setText(movies.get(movies.size() - 5).getTitle());
-                    votes4.setText(" " +movies.get(movies.size() -5).getVotes() + " ");
+                if (movies.size() > 4) {
+                    title4.setText(" " + movies.get(movies.size() - 5).getTitle()+ " ");
+                    votes4.setText(" " + movies.get(movies.size() - 5).getVotes() + " ");
                 }
 
 
             }
 
             @Override
-            public void onChildRemoved(DataSnapshot dataSnapshot) { }
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+            }
 
             @Override
-            public void onChildMoved(DataSnapshot dataSnapshot, String s) { }
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+            }
 
             @Override
-            public void onCancelled(FirebaseError firebaseError) { }
+            public void onCancelled(FirebaseError firebaseError) {
+            }
 
         });
+
+        spinner.setText(child);
 
     }
 
@@ -301,6 +338,52 @@ public class SilverscreenSwing extends JPanel {
         g.drawImage(picture, 0, 0, panel.getWidth(), panel.getHeight(), null);
     }
 
+    private static String displayDialog() {
+        Haikunator haikunator = new HaikunatorBuilder().setDelimiter("_").setTokenLength(0).build();
+        final String haiku = haikunator.haikunate();
+        String[] screens = {"Publik skärm", "Egen skärm"};
+        final JComboBox comboBox = new JComboBox(screens);
+        final JTextField existingScreen = new JTextField();
+        final JLabel label = new JLabel("Namn på egen skärm");
+        JPanel dialogPanel = new JPanel(new GridLayout(0, 1));
+
+        existingScreen.setVisible(false);
+        label.setVisible(false);
+        comboBox.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                int currentSelected = comboBox.getSelectedIndex();
+                if(currentSelected == 1){
+                    label.setVisible(true);
+                    existingScreen.setText(haiku);
+                    existingScreen.setVisible(true);
+                }
+            }
+        });
+
+        dialogPanel.add(comboBox);
+        dialogPanel.add(label);
+        dialogPanel.add(existingScreen);
+
+        int result = JOptionPane.showConfirmDialog(null, dialogPanel, "Välj skärm", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if(result == JOptionPane.OK_OPTION) {
+            String c = "";
+            switch (comboBox.getSelectedIndex()){
+                case 0:
+                    System.out.println(comboBox.getSelectedIndex());
+                    c = "top_movies";
+                    return c;
+                case 1:
+                    c = existingScreen.getText();
+                    return c;
+                default:
+                    c = "top_movies";
+                    return c;
+            }
+
+        }
+        return null;
+    }
 }
 
 
