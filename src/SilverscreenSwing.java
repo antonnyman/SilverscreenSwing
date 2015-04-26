@@ -11,7 +11,6 @@ import javax.imageio.event.IIOReadProgressListener;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
@@ -132,7 +131,7 @@ public class SilverscreenSwing extends JPanel {
                 Map<String, Object> movie = (Map<String, Object>) dataSnapshot.getValue();
 
                 if (dataSnapshot.hasChildren()) {
-                    Movie m = new Movie(dataSnapshot.getKey(), (String) movie.get("title"), (String) movie.get("fanart"), (String) movie.get("year"), (Long) movie.get("votes"));
+                    Movie m = new Movie(dataSnapshot.getKey(), (String) movie.get("title"), (String) movie.get("fanart"), (Long) movie.get("year"), (Long) movie.get("votes"));
                     if (!movies.contains(m)) {
                         movies.add(m);
                     }
@@ -248,7 +247,7 @@ public class SilverscreenSwing extends JPanel {
                 Iterable<DataSnapshot> dataSnapshots = dataSnapshot.getChildren();
                 Collections.sort(movies);
 
-                int place = Collections.binarySearch(movies, new Movie(dataSnapshot.getKey(), (String) movie.get("title"), (String) movie.get("fanart"), (String) movie.get("year"), (Long) movie.get("votes") + 1));
+                int place = Collections.binarySearch(movies, new Movie(dataSnapshot.getKey(), (String) movie.get("title"), (String) movie.get("fanart"), (Long) movie.get("year"), (Long) movie.get("votes") + 1));
 
                 for (DataSnapshot ds : dataSnapshots) {
                     if (ds.getKey().equals("votes")) {

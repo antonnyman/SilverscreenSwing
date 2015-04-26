@@ -3,49 +3,33 @@
  */
 public class Movie implements Comparable<Movie> {
 
-    private String slug, title, url, year;
-    private Long votes;
+    private String slug, title, url;
+    private Long votes, year;
 
 
-    public Movie(String slug, String title, String url, String year, Long votes) {
+    public Movie(String slug, String title, String url, Long year, Long votes) {
         this.slug = slug;
         this.title = title;
         this.url = url;
-        this.year = year;
         this.votes = votes;
+        this.year = year;
     }
+
 
     public String getSlug() {
         return slug;
     }
 
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
 
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
 
     public String getUrl() {
         return url;
     }
 
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public String getYear() {
-        return year;
-    }
-
-    public void setYear(String year) {
-        this.year = year;
-    }
 
     public Long getVotes() {
         return votes;
@@ -54,6 +38,7 @@ public class Movie implements Comparable<Movie> {
     public void setVotes(Long votes) {
         this.votes = votes;
     }
+
 
     @Override
     public int compareTo(Movie o) {
